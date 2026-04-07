@@ -4,7 +4,8 @@ import { TaskStatus } from '../task.model';
 
 export class UpdateTaskStatusDto {
   @IsEnum(TaskStatus, {
-    message: `Le statut doit être l'une des valeurs : ${Object.values(TaskStatus).join(', ')}`,
+    message: `status must be one of: ${Object.values(TaskStatus).join(', ')}`,
+
   })
   status: TaskStatus;
 }

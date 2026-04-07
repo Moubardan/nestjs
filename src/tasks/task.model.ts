@@ -10,4 +10,6 @@ export interface Task {
   title: string;
   description: string;
   status: TaskStatus;
+  ownerId: string;
+  notes?: string;
 }

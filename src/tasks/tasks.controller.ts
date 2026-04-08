@@ -5,7 +5,6 @@ import {
   Patch,
   Delete,
   Body,
-  Headers,
   Param,
   Query,
   HttpCode,
@@ -18,8 +17,12 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskStatusDto } from './dto/update-task-status.dto';
 import { GetTasksFilterDto } from './dto/get-tasks-filter.dto';
 import { IsOwnerGuard } from '../common/guards/is-owner.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { UserPayload } from '../users/user.model';
 
 @Controller('tasks')
+@UseGuards(JwtAuthGuard)
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
@@ -37,9 +40,9 @@ export class TasksController {
   @Post()
   create(
     @Body() createTaskDto: CreateTaskDto,
-    @Headers('x-user-id') userId: string,
+    @CurrentUser('id') userId: string,
   ): Task {
-    return this.tasksService.create(createTaskDto, userId ?? 'anonymous');
+    return this.tasksService.create(createTaskDto, userId);
   }
 
   @Patch(':id/status')
@@ -58,3 +61,4 @@ export class TasksController {
     this.tasksService.remove(id);
   }
 }
+

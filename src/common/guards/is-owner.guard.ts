@@ -1,33 +1,33 @@
-
 import {
   CanActivate,
   ExecutionContext,
   ForbiddenException,
   Injectable,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { TasksService } from '../../tasks/tasks.service';
+import { UserPayload } from '../../users/user.model';
 
 @Injectable()
 export class IsOwnerGuard implements CanActivate {
   constructor(private readonly tasksService: TasksService) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest<Request>();
+    const request = context.switchToHttp().getRequest<Request & { user: UserPayload }>();
 
-    const currentUserId = request.headers['x-user-id'] as string;
-
-    if (!currentUserId) {
-      throw new ForbiddenException('Missing X-User-Id header');
+    // request.user est peuplé par JwtAuthGuard (via JwtStrategy.validate())
+    // IsOwnerGuard doit toujours être utilisé APRÈS JwtAuthGuard
+    const currentUser = request.user;
+    if (!currentUser) {
+      throw new UnauthorizedException('Authentication required');
     }
 
     const taskId = request.params['id'];
     const task = this.tasksService.findById(taskId); // lève 404 si inexistante
 
-    if (task.ownerId !== currentUserId) {
-      throw new ForbiddenException(
-        'You can only modify your own tasks',
-      );
+    if (task.ownerId !== currentUser.id) {
+      throw new ForbiddenException('You can only modify your own tasks');
     }
 
     return true;

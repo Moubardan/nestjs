@@ -11,7 +11,7 @@ Learning project covering NestJS core concepts: modular architecture, IoC, JWT a
 - **bcrypt** — password & refresh token hashing
 - **class-validator / class-transformer** — DTO validation
 - **uuid** — ID generation
-- In-memory store (no database)
+- SQL Server or PostgreSQL + TypeORM
 
 ---
 
@@ -160,6 +160,15 @@ Exception Filter   HttpExceptionFilter — catches all HttpExceptions → unifor
 |--------|-------|-------------|-------|
 | PATCH | `/users/:id/role` | Change a user's role | JwtAuthGuard + RolesGuard (`ADMIN`) |
 
+### Posts & Comments
+
+| Method | Route | Description | Guard |
+|--------|-------|-------------|-------|
+| GET | `/posts` | List posts (paginated, `?page=1&limit=10&status=PUBLISHED&search=...`) | — |
+| GET | `/posts/:id` | Get one post | — |
+| POST | `/posts` | Create post (authorId = JWT userId) | JwtAuthGuard |
+| POST | `/posts/:id/comments` | Add comment to a post (authorId = JWT userId) | JwtAuthGuard |
+
 ---
 
 ## RBAC — Role-Based Access Control
@@ -200,18 +209,74 @@ All errors go through `HttpExceptionFilter` and return:
 npm install
 
 # 2. Set environment variables (copy and edit)
+# bash
 cp .env.example .env
 
-# 3. Start in watch mode
+# PowerShell
+Copy-Item .env.example .env
+
+# 3. Make sure your local SQL Server instance is running
+# Example: SQL Server (SQLEXPRESS)
+
+# 4. Create the database in SSMS if it does not exist yet
+# CREATE DATABASE nestjs_tasks;
+
+# 5. Start in watch mode
 npm run start:dev
 ```
 
 **Required environment variables** (see `.env.example`):
 
 ```
+DB_TYPE=mssql
+DB_HOST=localhost
+DB_PORT=<leave empty when using DB_INSTANCE>
+DB_INSTANCE=SQLEXPRESS
+DB_USERNAME=sa
+DB_PASSWORD=<your SQL Server login password>
+DB_NAME=nestjs_tasks
+DB_SYNCHRONIZE=true
 JWT_ACCESS_SECRET=<random 256-bit string>
 JWT_REFRESH_SECRET=<different random 256-bit string>
 ```
+
+`DB_SYNCHRONIZE=true` is useful for local development when you do not have migrations yet. Do not use it in production.
+
+## Local SQL Server
+
+SSMS is only the client. The NestJS app connects to the SQL Server engine, which on this machine appears to be the local `SQLEXPRESS` instance.
+
+Use a SQL login that your local instance accepts, then create the database once in SSMS:
+
+```sql
+CREATE DATABASE nestjs_tasks;
+```
+
+If your SQL Server instance uses a fixed TCP port instead of a named instance, set `DB_PORT` and leave `DB_INSTANCE` empty.
+
+## PostgreSQL with Docker
+
+The workspace includes a local PostgreSQL container in `docker-compose.yml` using `postgres:16-alpine`.
+
+```bash
+# start only postgres
+docker compose up -d postgres
+
+# stop it
+docker compose down
+```
+
+Default container settings match the NestJS config in `src/app.module.ts` and `data-source.ts`:
+
+```text
+host=localhost
+port=5432
+user=postgres
+password=postgres
+database=nestjs_tasks
+```
+
+If Docker is not installed yet, install Docker Desktop first. Then run `docker compose up -d postgres` from the project root.
 
 ---
 

@@ -12,7 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
-import { Task } from './task.model';
+import { TaskEntity } from './task.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskStatusDto } from './dto/update-task-status.dto';
 import { GetTasksFilterDto } from './dto/get-tasks-filter.dto';
@@ -28,12 +28,12 @@ export class TasksController {
 
   // GET /tasks?status=OPEN&search=nest
   @Get()
-  findAll(@Query() filterDto: GetTasksFilterDto): Task[] {
+  findAll(@Query() filterDto: GetTasksFilterDto): Promise<TaskEntity[]> {
     return this.tasksService.findAll(filterDto);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string): Task {
+  findOne(@Param('id') id: string): Promise<TaskEntity> {
     return this.tasksService.findById(id);
   }
 
@@ -41,7 +41,7 @@ export class TasksController {
   create(
     @Body() createTaskDto: CreateTaskDto,
     @CurrentUser('id') userId: string,
-  ): Task {
+  ): Promise<TaskEntity> {
     return this.tasksService.create(createTaskDto, userId);
   }
 
@@ -50,15 +50,15 @@ export class TasksController {
   updateStatus(
     @Param('id') id: string,
     @Body() updateTaskStatusDto: UpdateTaskStatusDto,
-  ): Task {
+  ): Promise<TaskEntity> {
     return this.tasksService.updateStatus(id, updateTaskStatusDto);
   }
 
   @Delete(':id')
   @UseGuards(IsOwnerGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string): void {
-    this.tasksService.remove(id);
+  async remove(@Param('id') id: string): Promise<void> {
+    await this.tasksService.remove(id);
   }
 }
 

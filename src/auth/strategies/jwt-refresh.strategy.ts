@@ -22,7 +22,7 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
     const authHeader = req.get('Authorization') ?? '';
     const refreshToken = authHeader.replace('Bearer ', '').trim();
 
-    const user = this.usersService.findById(payload.sub);
+    const user = await this.usersService.findById(payload.sub);
 
     if (!user.refreshTokenHash) {
       throw new UnauthorizedException('No active session — please log in again');

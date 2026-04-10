@@ -85,3 +85,23 @@ Requête HTTP entrante
 - Intercepte **toute exception** non gérée, à n'importe quelle étape du pipeline.
 - Formate la réponse d'erreur de façon uniforme.
 - S'exécute même si l'erreur vient d'un Guard ou d'un Pipe.
+
+---
+
+## Q : Pourquoi stocker le Refresh Token en BDD (et pas seulement le Access Token) ?
+
+Le **Refresh Token** est stocké pour pouvoir le **révoquer**.
+
+- Sans stockage, un token volé reste valide jusqu'à son expiration.
+- On ne peut pas faire un vrai logout côté serveur.
+- On ne peut pas invalider une session active.
+
+Le **Access Token** n'est généralement pas stocké car il vit peu de temps.
+
+## Q : Différence entre `@UseGuards(AuthGuard('jwt'))` et un Guard custom ?
+
+**`AuthGuard('jwt')`** : guard Passport prêt à l'emploi.
+Il valide le JWT via la strategy et remplit `request.user`.
+
+**Guard custom** : guard écrit par toi.
+Il sert à ajouter des règles métier comme vérifier le rôle, le propriétaire, ou une condition spécifique.

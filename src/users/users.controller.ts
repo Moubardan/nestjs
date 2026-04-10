@@ -13,10 +13,10 @@ export class UsersController {
 
   @Patch(':id/role')
   @Roles(Role.ADMIN)
-  updateRole(
+  async updateRole(
     @Param('id') id: string,
     @Body() updateUserRoleDto: UpdateUserRoleDto,
-  ): UserPayload {
+  ): Promise<UserPayload> {
     return this.usersService.updateRole(id, updateUserRoleDto.role);
   }
 }

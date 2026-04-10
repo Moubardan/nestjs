@@ -1,10 +1,15 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { v4 as uuidv4 } from 'uuid';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { User, Role, UserPayload } from './user.model';
+import { UserEntity } from './user.entity';
 
 @Injectable()
 export class UsersService {
-  private users: User[] = [];
+  constructor(
+    @InjectRepository(UserEntity)
+    private readonly usersRepository: Repository<UserEntity>,
+  ) {}
 
   private toUserPayload(user: User): UserPayload {
     return {
@@ -14,52 +19,53 @@ export class UsersService {
     };
   }
 
-  findByEmail(email: string): User | undefined {
-    return this.users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+  async findByEmail(email: string): Promise<UserEntity | null> {
+    return this.usersRepository.findOne({
+      where: { email: email.toLowerCase() },
+    });
   }
 
-  findById(id: string): User {
-    const user = this.users.find((u) => u.id === id);
+  async findById(id: string): Promise<UserEntity> {
+    const user = await this.usersRepository.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException(`User with id "${id}" not found`);
     }
     return user;
   }
 
-  create(email: string, passwordHash: string): User {
-    if (this.findByEmail(email)) {
+  async create(email: string, passwordHash: string): Promise<UserEntity> {
+    if (await this.findByEmail(email)) {
       throw new ConflictException('Email already in use');
     }
 
-    const isFirstUser = this.users.length === 0;
+    const isFirstUser = (await this.usersRepository.count()) === 0;
 
-    const user: User = {
-      id: uuidv4(),
+    const user = this.usersRepository.create({
       email: email.toLowerCase(),
       passwordHash,
       role: isFirstUser ? Role.ADMIN : Role.USER,
       refreshTokenHash: null,
-      createdAt: new Date(),
-    };
+    });
 
-    this.users.push(user);
-    return user;
+    return this.usersRepository.save(user);
   }
 
   // Appelé après login — stocke le hash du refresh token
-  updateRefreshToken(id: string, refreshTokenHash: string | null): void {
-    const user = this.findById(id);
+  async updateRefreshToken(id: string, refreshTokenHash: string | null): Promise<void> {
+    const user = await this.findById(id);
     user.refreshTokenHash = refreshTokenHash;
+    await this.usersRepository.save(user);
   }
 
-  updateRole(id: string, role: Role): UserPayload {
-    const user = this.findById(id);
+  async updateRole(id: string, role: Role): Promise<UserPayload> {
+    const user = await this.findById(id);
     user.role = role;
+    await this.usersRepository.save(user);
     return this.toUserPayload(user);
   }
 
   // Promotion ADMIN (usage interne / seed)
-  promoteToAdmin(id: string): void {
-    this.updateRole(id, Role.ADMIN);
+  async promoteToAdmin(id: string): Promise<void> {
+    await this.updateRole(id, Role.ADMIN);
   }
 }

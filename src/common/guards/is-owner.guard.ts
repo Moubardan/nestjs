@@ -13,7 +13,7 @@ import { UserPayload } from '../../users/user.model';
 export class IsOwnerGuard implements CanActivate {
   constructor(private readonly tasksService: TasksService) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request & { user: UserPayload }>();
 
     // request.user est peuplé par JwtAuthGuard (via JwtStrategy.validate())
@@ -24,7 +24,7 @@ export class IsOwnerGuard implements CanActivate {
     }
 
     const taskId = request.params['id'];
-    const task = this.tasksService.findById(taskId); // lève 404 si inexistante
+    const task = await this.tasksService.findById(taskId); // lève 404 si inexistante
 
     if (task.ownerId !== currentUser.id) {
       throw new ForbiddenException('You can only modify your own tasks');

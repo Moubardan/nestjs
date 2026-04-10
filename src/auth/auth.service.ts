@@ -25,12 +25,12 @@ export class AuthService {
 
   async register(dto: RegisterDto): Promise<TokenPair> {
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
-    const user = this.usersService.create(dto.email, passwordHash); // lève 409 si email existe déjà
+    const user = await this.usersService.create(dto.email, passwordHash);
     return this.issueTokenPair(user);
   }
 
   async login(dto: LoginDto): Promise<TokenPair> {
-    const user = this.usersService.findByEmail(dto.email);
+    const user = await this.usersService.findByEmail(dto.email);
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -45,11 +45,12 @@ export class AuthService {
   }
 
   async refreshTokens(user: UserPayload): Promise<TokenPair> {
-    const fullUser = this.usersService.findById(user.id);
+    const fullUser = await this.usersService.findById(user.id);
     return this.issueTokenPair(fullUser);
   }
-  logout(userId: string): void {
-    this.usersService.updateRefreshToken(userId, null);
+
+  async logout(userId: string): Promise<void> {
+    await this.usersService.updateRefreshToken(userId, null);
   }
 
   private async issueTokenPair(user: User): Promise<TokenPair> {
@@ -70,7 +71,7 @@ export class AuthService {
     ]);
 
     const refreshTokenHash = await bcrypt.hash(refreshToken, BCRYPT_ROUNDS);
-    this.usersService.updateRefreshToken(user.id, refreshTokenHash);
+    await this.usersService.updateRefreshToken(user.id, refreshTokenHash);
 
     return { accessToken, refreshToken };
   }
